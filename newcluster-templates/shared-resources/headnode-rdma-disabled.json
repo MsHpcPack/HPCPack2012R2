@@ -109,7 +109,7 @@
               "name": "[concat(parameters('vmName'), '-datadisk')]",
               "caching": "None",
               "createOption": "Empty",
-              "diskSizeGB": 200,
+              "diskSizeGB": 500,
               "managedDisk": {
                 "storageAccountType": "[parameters('storageAccountType')]"
               },
