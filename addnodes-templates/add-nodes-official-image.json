@@ -1,0 +1,223 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "computeNodeNamePrefix": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 12,
+      "metadata": {
+        "description": "The name prefix of the compute nodes. It must be no more than 12 characters, begin with a letter, and contain only letters, numbers and hyphens. For example, computeNodeNamePrefix is specified as 'IaaSCN-', and computeNodeNameStartIndex is specified as 2, the compute node names will be 'IaaSCN-002', 'IaaSCN-003', ...; Make sure the compute node names are unique in the domain forest."
+      }
+    },
+    "computeNodeNameStartIndex": {
+      "type": "int",
+      "defaultValue": 0,
+      "metadata": {
+        "description": "The start index of the compute node name series. For example, computeNodeNamePrefix is specified as 'IaaSCN-', and computeNodeNameStartIndex is specified as 2, the compute node names will be 'IaaSCN-002', 'IaaSCN-003', ..."
+      }
+    },
+    "computeNodeNumber": {
+      "type": "int",
+      "defaultValue": 10,
+      "minValue": 1,
+      "maxValue": 50,
+      "metadata": {
+        "description": "The number of the compute nodes. All the compute nodes will be created in the storage account where the custom HPC Pack compute node image locates. It is recommended to create no more than 40 VMs in one storage account to avoid possible throttling."
+      }
+    },
+    "computeNodeImage": {
+      "type": "string",
+      "defaultValue": "ComputeNode",
+      "allowedValues": [
+        "ComputeNode",
+        "ComputeNodeWithExcel"
+      ],
+      "metadata": {
+        "description": "The VM image of the compute nodes"
+      }
+    },
+    "computeNodeVMSize": {
+      "type": "string",
+      "defaultValue": "Standard_D3_v2",
+      "metadata": {
+        "description": "The VM size of the compute nodes, all available VM sizes in Azure can be found at https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes. Note that some VM sizes in the list are only available in some particular locations. Please check the availability and the price of the VM sizes at https://azure.microsoft.com/pricing/details/virtual-machines/windows/ before deployment."
+      }
+    },
+    "computeNodeDiskType": {
+      "type": "string",
+      "defaultValue": "HDD",
+      "allowedValues": [
+        "HDD",
+        "SSD"
+      ],
+      "metadata": {
+        "description": "The disk type of the compute node VMs. Note that SSD only supports DS-series, DSv2-series, GS-series, and Fs-series VMs."
+      }
+    },
+    "domainUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "The domain user to be promoted as the cluster administrator, also used as local administrator user name, for example 'johnlee'."
+      }
+    },
+    "domainUserPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The domain user password, also used as the password of the local administrator user."
+      }
+    },
+    "virtualNetworkName": {
+      "type": "string",
+      "metadata": {
+        "description": "The existing virtual network in which all VMs of the HPC cluster will be created."
+      }
+    },
+    "virtualNetworkResourceGroupName": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource group in which the existing virtual network was created."
+      }
+    },
+    "subnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "The existing subnet in which all VMs of the HPC cluster will be created."
+      }
+    },
+    "clusterName": {
+      "type": "string",
+      "metadata": {
+        "description": "The HPC Pack cluster name to join."
+      }
+    },
+    "domainName": {
+      "type": "string",
+      "metadata": {
+        "description": "The fully qualified domain name (FQDN) for the existing domain forest in which the HPC cluster will join, for example 'hpc.local'."
+      }
+    }
+  },
+  "variables": {
+    "apiVersion": "2015-06-15",
+    "storageAccountTypes": {
+      "HDD": "Standard_LRS",
+      "SSD": "Premium_LRS"
+    },
+    "computeNodeImages": {
+      "ComputeNode": {
+        "publisher": "MicrosoftWindowsServerHPCPack",
+        "offer": "WindowsServerHPCPack",
+        "sku": "2012R2CN",
+        "version": "latest"
+      },
+      "ComputeNodeWithExcel": {
+        "publisher": "MicrosoftWindowsServerHPCPack",
+        "offer": "WindowsServerHPCPack",
+        "sku": "2012R2CNExcel",
+        "version": "latest"
+      }
+    },
+    "computeNodeImageRef": "[variables('computeNodeImages')[parameters('computeNodeImage')]]",
+    "availabilitySetNamePrefix": "[concat(parameters('computeNodeNamePrefix'), 'avset')]",
+    "nbrVMPerAvailabilitySet": 80,
+    "availabilitySetStartIndex": "[div(parameters('computeNodeNameStartIndex'), variables('nbrVMPerAvailabilitySet'))]",
+    "availabilitySetEndIndex": "[div(sub(add(parameters('computeNodeNameStartIndex'), parameters('computeNodeNumber')), 1), variables('nbrVMPerAvailabilitySet'))]",
+    "availabilitySetNumber": "[add(sub(variables('availabilitySetEndIndex'), variables('availabilitySetStartIndex')), 1)]",
+    "vnetID": "[resourceId(parameters('virtualNetworkResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
+    "subnetRef": "[concat(variables('vnetID'),'/subnets/', parameters('subnetName'))]",
+    "nicNameSuffix": "[concat('-nic', uniqueString(variables('subnetRef')))]",
+    "vmSizeSuffix": "[uniqueString(resourceGroup().id)]",
+    "suffixA8Size": "[concat('Standard_A8', variables('vmSizeSuffix'))]",
+    "suffixA9Size": "[concat('Standard_A9', variables('vmSizeSuffix'))]",
+    "suffixH16rSize": "[concat('Standard_H16r', variables('vmSizeSuffix'))]",
+    "suffixH16mrSize": "[concat('Standard_H16mr', variables('vmSizeSuffix'))]",
+    "suffixNC24rSize": "[concat('Standard_NC24r', variables('vmSizeSuffix'))]",
+    "suffixCNSize": "[concat(parameters('computeNodeVMSize'), variables('vmSizeSuffix'))]",
+    "cnRDMACapable": "[replace(replace(replace(replace(replace(replace(variables('suffixCNSize'), variables('suffixA8Size'), 'enabled'), variables('suffixA9Size'), 'enabled'), variables('suffixH16rSize'), 'enabled'), variables('suffixH16mrSize'), 'enabled'), variables('suffixNC24rSize'), 'enabled'), variables('suffixCNSize'), 'disabled')]",
+    "cnRDMAState": "[variables('cnRDMACapable')]",
+    "computeNodeCustomData": "[base64(concat('HPCClusterName=', parameters('clusterName'), '\r\nImageCategory=public\r\nImageName=', variables('computeNodeImageRef').offer, '-', variables('computeNodeImageRef').sku, '\r\nVMSize=', parameters('computeNodeVMSize')))]",
+    "sharedResxBaseUrl": "https://raw.githubusercontent.com/MsHpcPack/HPCPack2012R2/existingvnet/shared-resources"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[concat(variables('availabilitySetNamePrefix'), padLeft(string(copyIndex()), 2, '0'))]",
+      "apiVersion": "2016-04-30-preview",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Aligned"
+      },
+      "properties": {
+        "platformUpdateDomainCount": 5,
+        "platformFaultDomainCount": 2
+      },
+      "copy": {
+        "name": "availabilitySetCopy",
+        "count": "[variables('availabilitySetNumber')]"
+      }
+    },
+    {
+      "apiVersion": "2015-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "[concat('create', parameters('computeNodeNamePrefix'), padLeft(string(copyIndex(parameters('computeNodeNameStartIndex'))), 3, '0'))]",
+      "dependsOn": [
+        "availabilitySetCopy"
+      ],
+      "copy": {
+        "name": "CN",
+        "count": "[parameters('computeNodeNumber')]"
+      },
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('sharedResxBaseUrl'), '/windowsnode-rdma-', variables('cnRDMAState'), '.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "apiVersion": {
+            "value": "[variables('apiVersion')]"
+          },
+          "nicName": {
+            "value": "[concat(parameters('computeNodeNamePrefix'), padLeft(string(copyIndex(parameters('computeNodeNameStartIndex'))), 3, '0'), variables('nicNameSuffix'))]"
+          },
+          "subnetId": {
+            "value": "[variables('subnetRef')]"
+          },
+          "vmName": {
+            "value": "[concat(parameters('computeNodeNamePrefix'), padLeft(string(copyIndex(parameters('computeNodeNameStartIndex'))), 3, '0'))]"
+          },
+          "vmSize": {
+            "value": "[parameters('computeNodeVMSize')]"
+          },
+          "storageAccountType": {
+            "value": "[variables('storageAccountTypes')[parameters('computeNodeDiskType')]]"
+          },
+          "imageReference": {
+            "value": "[variables('computeNodeImageRef')]"
+          },
+          "adminUsername": {
+            "value": "[parameters('domainUsername')]"
+          },
+          "adminPassword": {
+            "value": "[parameters('domainUserPassword')]"
+          },
+          "availabilitySetName": {
+            "value": "[concat(variables('availabilitySetNamePrefix'), padLeft(string(div(copyIndex(parameters('computeNodeNameStartIndex')), variables('nbrVMPerAvailabilitySet'))), 2, '0'))]"
+          },
+          "customData": {
+            "value": "[variables('computeNodeCustomData')]"
+          },
+          "clusterName": {
+            "value": "[parameters('clusterName')]"
+          },
+          "privateDomainName": {
+            "value": "[parameters('domainName')]"
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+  }
+}

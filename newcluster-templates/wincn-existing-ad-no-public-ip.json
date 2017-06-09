@@ -116,17 +116,10 @@
       "metadata": {
         "description": "Optional URL of a public available PowerShell script you want to run on the head node after it is configured. The script will be run as the Local System account. You can also specify arguments for the script, for example 'http://www.contoso.com/myhnpostscript.ps1 -Arg1 arg1 -Arg2 arg2'."
       }
-    },
-    "computeNodePostConfigScript": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Optional URL of a public available PowerShell script you want to run on the compute nodes after they are configured. The script will be run as the Local System account. You can also specify arguments for the script, for example 'http://www.contoso.com/mycnpostscript.ps1 -Arg1 arg1 -Arg2 arg2'."
-      }
     }
   },
   "variables": {
-    "artifactsBaseUrl": "https://raw.githubusercontent.com/MsHpcPack/HPCPack2012R2/existingvnet/newcluster-templates/shared-resources",
+    "artifactsBaseUrl": "https://raw.githubusercontent.com/MsHpcPack/HPCPack2012R2/existingvnet/shared-resources",
     "apiVersion": "2015-06-15",
     "storageAccountTypes": {
       "HDD": "Standard_LRS",
@@ -352,17 +345,11 @@
           "customData": {
             "value": "[variables('computeNodeCustomData')]"
           },
-          "scriptBaseUri": {
-            "value": "[variables('artifactsBaseUrl')]"
-          },
           "clusterName": {
             "value": "[parameters('clusterName')]"
           },
           "privateDomainName": {
             "value": "[parameters('domainName')]"
-          },
-          "computeNodePostConfigScript": {
-            "value": "[trim(parameters('computeNodePostConfigScript'))]"
           }
         }
       }
