@@ -123,7 +123,7 @@
     "suffixCNSize": "[concat(parameters('computeNodeVMSize'), variables('vmSizeSuffix'))]",
     "cnRDMACapable": "[replace(replace(replace(replace(replace(replace(variables('suffixCNSize'), variables('suffixA8Size'), 'enabled'), variables('suffixA9Size'), 'enabled'), variables('suffixH16rSize'), 'enabled'), variables('suffixH16mrSize'), 'enabled'), variables('suffixNC24rSize'), 'enabled'), variables('suffixCNSize'), 'disabled')]",
     "cnRDMAState": "[variables('cnRDMACapable')]",
-    "computeNodeCustomData": "[base64(concat('HPCClusterName=', parameters('clusterName'), '\r\nImageCategory=public\r\nImageName=UserCustomedImage\r\nVMSize=', parameters('computeNodeVMSize')))]",
+    "computeNodeCustomData": "[base64(concat('HPCClusterName=', parameters('clusterName'), '\r\nImageCategory=user\r\nImageName=UserCustomedImage\r\nVMSize=', parameters('computeNodeVMSize')))]",
     "computeNodeImageRef": {
       "id": "[variables('computeNodeImageId')]"
     },
