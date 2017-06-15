@@ -66,9 +66,9 @@
     "computeNodeNamePrefix": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 12,
+      "maxLength": 9,
       "metadata": {
-        "description": "The name prefix of the compute nodes. It must be no more than 12 characters, begin with a letter, and contain only letters, numbers and hyphens. For example, if 'IaaSCN-' is specified, the compute node names will be 'IaaSCN-000', 'IaaSCN-001', ...; Make sure the compute node names are unique in the domain forest."
+        "description": "The name prefix of the compute nodes, also used as VMSS name. It must be no more than 9 characters, begin with a letter, and contain only letters, numbers. For example, if 'IaaSCN' is specified, the compute node names will be 'IaaSCN000000', 'IaaSCN000001', ...; Make sure the compute node names are unique in the domain forest."
       }
     },
     "computeNodeNumber": {
@@ -257,7 +257,7 @@
     {
       "apiVersion": "2016-04-30-preview",
       "type": "Microsoft.Compute/virtualMachineScaleSets",
-      "name": "[concat(parameters('computeNodeNamePrefix'), 'vmss')]",
+      "name": "[parameters('computeNodeNamePrefix')]",
       "location": "[resourceGroup().location]",
       "sku": {
         "name": "[parameters('computeNodeVMSize')]",
