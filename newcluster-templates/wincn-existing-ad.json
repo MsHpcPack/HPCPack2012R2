@@ -1,0 +1,267 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterName": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 15,
+      "metadata": {
+        "description": "The name of the HPC cluster. It must be unique in the domain forest; It must contain between 3 and 15 characters with lowercase letters and numbers, and must start with a letter."
+      }
+    },
+    "virtualNetworkName": {
+      "type": "string",
+      "metadata": {
+        "description": "The existing virtual network in which all VMs of the HPC cluster will be created."
+      }
+    },
+    "virtualNetworkResourceGroupName": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource group in which the existing virtual network was created."
+      }
+    },
+    "subnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "The existing subnet in which all VMs of the HPC cluster will be created."
+      }
+    },
+    "domainName": {
+      "type": "string",
+      "metadata": {
+        "description": "The fully qualified domain name (FQDN) for the existing domain forest in which the HPC cluster will join, for example 'hpc.local'."
+      }
+    },
+    "headNodeVMSize": {
+      "type": "string",
+      "defaultValue": "Standard_DS4_v2",
+      "metadata": {
+        "description": "The VM size of the head node, all available VM sizes in Azure can be found at https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes. Note that some VM sizes in the list are only available in some particular locations. Please check the availability and the price of the VM sizes at https://azure.microsoft.com/pricing/details/virtual-machines/windows/ before deployment."
+      }
+    },
+    "headNodeDiskType": {
+      "type": "string",
+      "defaultValue": "SSD",
+      "allowedValues": [
+        "HDD",
+        "SSD"
+      ],
+      "metadata": {
+        "description": "The disk type of head node VM. Note that SSD only supports DS-series, DSv2-series, GS-series, and Fs-series VMs."
+      }
+    },
+    "computeNodeImage": {
+      "type": "string",
+      "defaultValue": "ComputeNode",
+      "allowedValues": [
+        "ComputeNode",
+        "ComputeNodeWithExcel"
+      ],
+      "metadata": {
+        "description": "The VM image of the compute nodes"
+      }
+    },
+    "computeNodeNamePrefix": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 12,
+      "metadata": {
+        "description": "The name prefix of the compute nodes. It must be no more than 12(or 9 if you use VMSS) characters, begin with a letter, and contain only letters, numbers. Make sure the compute node names are unique in the domain forest."
+      }
+    },
+    "computeNodeNumber": {
+      "type": "int",
+      "defaultValue": 10,
+      "minValue": 1,
+      "maxValue": 500,
+      "metadata": {
+        "description": "The number of the compute nodes"
+      }
+    },
+    "computeNodeVMSize": {
+      "type": "string",
+      "defaultValue": "Standard_D3_v2",
+      "metadata": {
+        "description": "The VM size of the compute nodes, all available VM sizes in Azure can be found at https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-windows-sizes. Note that some VM sizes in the list are only available in some particular locations. Please check the availability and the price of the VM sizes at https://azure.microsoft.com/pricing/details/virtual-machines/windows/ before deployment."
+      }
+    },
+    "computeNodeDiskType": {
+      "type": "string",
+      "defaultValue": "HDD",
+      "allowedValues": [
+        "HDD",
+        "SSD"
+      ],
+      "metadata": {
+        "description": "The disk type of the compute node VMs. Note that SSD only supports DS-series, DSv2-series, GS-series, and Fs-series VMs."
+      }
+    },
+    "useVmssForComputeNodes": {
+      "type": "string",
+      "defaultValue": "No",
+      "allowedValues": [
+        "Yes",
+        "No"
+      ],
+      "metadata": {
+        "description": "Specify whether to use VM scale set to create compute nodes. 'Yes' for VM scale set, 'No' for VMs"
+      }
+    },
+    "domainUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "The domain user to be promoted as the cluster administrator, also used as local administrator user name, for example 'johnlee'."
+      }
+    },
+    "domainUserPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The domain user password, also used as the password of the local administrator user."
+      }
+    },
+    "createPublicIPAddressForHeadNode": {
+      "type": "string",
+      "defaultValue": "No",
+      "allowedValues": [
+        "Yes",
+        "No"
+      ],
+      "metadata": {
+        "description": "Indicates whether to create a public IP address for head node."
+      }
+    },
+    "publicIPAddressDnsNameLabel": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Specify a DNS name label for the public IP address, if not specified the cluster name will be used as DNS name label."
+      }
+    },
+    "createStorageAccountForSOA": {
+      "type": "string",
+      "defaultValue": "Yes",
+      "allowedValues": [
+        "Yes",
+        "No"
+      ],
+      "metadata": {
+        "description": "Indicates whether to create the storage account for SOA common data and SOA session monitoring features."
+      }
+    },
+    "headNodePostConfigScript": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional URL of a public available PowerShell script you want to run on the head node after it is configured. The script will be run as the Local System account. You can also specify arguments for the script, for example 'http://www.contoso.com/myhnpostscript.ps1 -Arg1 arg1 -Arg2 arg2'."
+      }
+    }
+  },
+  "variables": {
+    "computeNodeImageOsPlatform": "Windows",
+    "computeNodeImages": {
+      "ComputeNode": {
+        "publisher": "MicrosoftWindowsServerHPCPack",
+        "offer": "WindowsServerHPCPack",
+        "sku": "2012R2CN",
+        "version": "latest"
+      },
+      "ComputeNodeWithExcel": {
+        "publisher": "MicrosoftWindowsServerHPCPack",
+        "offer": "WindowsServerHPCPack",
+        "sku": "2012R2CNExcel",
+        "version": "latest"
+      }
+    },
+    "currentComputeNodeImage": "[variables('computeNodeImages')[parameters('computeNodeImage')]]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2015-01-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "mainTemplate",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('artifactsBaseUrl'), '/mainTemplate.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "clusterName": {
+            "value": "[parameters('clusterName')]"
+          },
+          "newOrExistingDomainForest": {
+            "value": "existing"
+          },
+          "virtualNetworkName": {
+            "value": "[parameters('virtualNetworkName')]"
+          },
+          "virtualNetworkResourceGroupName": {
+            "value": "[parameters('virtualNetworkResourceGroupName')]"
+          },
+          "subnetName": {
+            "value": "[parameters('subnetName')]"
+          },
+          "domainName": {
+            "value": "[parameters('domainName')]"
+          },
+          "createStorageAccountForSOA": {
+            "value": "[if(equals(parameters('createStorageAccountForSOA'), 'Yes'), bool('true'), bool('false'))]"
+          },
+          "headNodeDiskType": {
+            "value": "[parameters('headNodeDiskType')]"
+          },
+          "headNodeVMSize": {
+            "value": "[parameters('headNodeVMSize')]"
+          },
+          "computeNodeImageOsPlatform": {
+            "value": "[variables('computeNodeImageOsPlatform')]"
+          },
+          "computeNodeImageRef": {
+            "value": "[variables('currentComputeNodeImage')]"
+          },
+          "useVmssForComputeNodes": {
+            "value": "[if(equals(parameters('useVmssForComputeNodes'), 'Yes'), bool('true'), bool('false'))]"
+          },
+          "computeNodeNamePrefix": {
+            "value": "[parameters('computeNodeNamePrefix')]"
+          },
+          "computeNodeNumber": {
+            "value": "[parameters('computeNodeNumber')]"
+          },
+          "computeNodeDiskType": {
+            "value": "[parameters('computeNodeDiskType')]"
+          },
+          "computeNodeVMSize": {
+            "value": "[parameters('computeNodeVMSize')]"
+          },
+          "publicIPCreateOption": {
+            "value": "[if(equals(parameters('createPublicIPAddressForHeadNode'), 'Yes'), 'new', 'no')]"
+          },
+          "publicIPDNSNameLabel": {
+            "value": "[parameters('publicIPAddressDnsNameLabel')]"
+          },
+          "adminUsername": {
+            "value": "[parameters('domainUsername')]"
+          },
+          "adminPassword": {
+            "value": "[parameters('domainUserPassword')]"
+          },
+          "headNodePostConfigScript": {
+            "value": "[trim(parameters('headNodePostConfigScript'))]"
+          },
+          "artifactsBaseUrl": {
+            "value": "[variables('artifactsBaseUrl')]"
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "clusterDnsName": {
+      "type": "string",
+      "value": "[reference('mainTemplate').outputs.clusterDNSName.value]"
+    }
+  }
+}
