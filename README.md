@@ -18,6 +18,13 @@ This template deploys an HPC Pack 2012 R2 cluster for Windows HPC workloads with
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
+### Template 3: Cluster for Linux workloads in an existing Active Directory Domain (No public IP)
+This template deploys an HPC Pack 2012 R2 cluster for Linux HPC workloads in an existing Active Directory Domain forest. The cluster includes one head node with local databases (SQL Server 2014 Express version), and a configurable number of **Linux** compute nodes. No public IP address is created for the virtual machines. Use this template if you have a virtual network with Express Route configured and you want to join the cluster to your on-premises Active Directory Domain.
+
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMsHpcPack%2FHPCPack2012R2%2Fexistingvnet%2Fnewcluster-templates%2Flinuxcn-existing-ad-no-public-ip.json" target="_blank">
+    <img src="http://azuredeploy.net/deploybutton.png"/>
+</a>
+
 ---
 ## The following templates create compute nodes with Azure VM scale set
 ### Template 1: Cluster for Windows workloads in an existing Active Directory Domain (No public IP)
@@ -31,5 +38,12 @@ This template deploys an HPC Pack 2012 R2 cluster for Windows HPC workloads in a
 This template deploys an HPC Pack 2012 R2 cluster for Windows HPC workloads with user customized compute node image in an existing Active Directory Domain forest. The cluster includes one head node with local databases (SQL Server 2014 Express version), and a configurable number of **Windows** compute nodes from user customized VM image. No public IP address is created for the virtual machines. Use this template if you have a virtual network with Express Route configured and you want to join the cluster to your on-premises Active Directory Domain.
 
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMsHpcPack%2FHPCPack2012R2%2Fexistingvnet%2Fnewcluster-templates%2Fcustomcn-vmss-existing-ad-no-public-ip.json" target="_blank">
+    <img src="http://azuredeploy.net/deploybutton.png"/>
+</a>
+
+### Template 3: Cluster for Linux workloads in an existing Active Directory Domain (No public IP)
+This template deploys an HPC Pack 2012 R2 cluster for Linux HPC workloads in an existing Active Directory Domain forest. The cluster includes one head node with local databases (SQL Server 2014 Express version), and a configurable number of **Linux** compute nodes. No public IP address is created for the virtual machines. Use this template if you have a virtual network with Express Route configured and you want to join the cluster to your on-premises Active Directory Domain.
+
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMsHpcPack%2FHPCPack2012R2%2Fexistingvnet%2Fnewcluster-templates%2Flinuxcn-vmss-existing-ad-no-public-ip.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>

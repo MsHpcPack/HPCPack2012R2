@@ -70,12 +70,6 @@
         "description": "The custom data in base64 format"
       }
     },
-    "scriptBaseUri": {
-      "type": "string",
-      "metadata": {
-        "description": "The base URI of the script"
-      }
-    },
     "clusterName": {
       "type": "string",
       "metadata": {
@@ -87,13 +81,6 @@
       "metadata": {
         "description": "The fully qualified domain name (FQDN) for the private domain forest which will be created by this template, for example 'hpc.local'."
       }
-    },
-    "computeNodePostConfigScript": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Not used currently."
-      }    
     }
   },
   "variables":{
