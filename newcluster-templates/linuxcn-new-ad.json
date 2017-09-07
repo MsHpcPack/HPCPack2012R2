@@ -151,6 +151,7 @@
   "variables": {
     "virtualNetworkName": "[concat(parameters('clusterName'), 'VNet')]",
     "subnetName": "Subnet-1",
+    "artifactsBaseUrl": "https://raw.githubusercontent.com/MsHpcPack/HPCPack2012R2/master/shared-resources",
     "computeNodeImageOsPlatform": "Linux",
     "computeNodeImages": {
       "CentOS_6.5": {

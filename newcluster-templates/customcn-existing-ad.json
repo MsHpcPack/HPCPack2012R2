@@ -170,6 +170,7 @@
     }
   },
   "variables": {
+    "artifactsBaseUrl": "https://raw.githubusercontent.com/MsHpcPack/HPCPack2012R2/master/shared-resources",
     "computeNodeImageId": "[resourceId(parameters('computeNodeCustomImageRGName'), 'Microsoft.Compute/images', parameters('computeNodeCustomImageName'))]",
     "currentComputeNodeImage": {
       "id": "[variables('computeNodeImageId')]"
