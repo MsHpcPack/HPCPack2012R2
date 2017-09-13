@@ -71,6 +71,13 @@
         "description": "Specify whether the scale set is limited to a single placement group"
       }
     },
+    "installRDMADriver": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Specify whether to install RDMA driver, currently not used for VMSS"
+      }
+    },
     "enableAutomaticUpdates": {
       "type": "bool",
       "defaultValue": false,

@@ -70,6 +70,20 @@
         "description": "The custom data in base64 format"
       }
     },
+    "installRDMADriver": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Not used for Linux node"
+      }
+    },
+    "enableAutomaticUpdates": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Not used for Linux nodes"
+      }
+    },    
     "clusterName": {
       "type": "string",
       "metadata": {
@@ -81,19 +95,6 @@
       "metadata": {
         "description": "The fully qualified domain name (FQDN) for the domain forest in which the cluster is created, for example 'hpc.local'."
       }
-    },
-    "scriptBaseUri": {
-      "type": "string",
-      "metadata": {
-        "description": "The base URI of the script"
-      }
-    },
-    "computeNodePostConfigScript": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Not used currently."
-      }    
     }
   },
   "variables":{

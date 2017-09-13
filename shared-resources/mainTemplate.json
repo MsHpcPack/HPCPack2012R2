@@ -405,6 +405,9 @@
           "availabilitySetName": {
             "value": "[variables('hnAvailabilitySetName')]"
           },
+          "installRDMADriver": {
+            "value": "[variables('hnInstallRDMADriver')]"
+          },
           "scriptBaseUri": {
             "value": "[parameters('artifactsBaseUrl')]"
           },
@@ -535,6 +538,9 @@
           "customData": {
             "value": "[variables('computeNodeCustomData')]"
           },
+          "installRDMADriver": {
+            "value": "[variables('cnInstallRDMADriver')]"
+          },
           "clusterName": {
             "value": "[parameters('clusterName')]"
           },
@@ -591,6 +597,9 @@
           },
           "singlePlacementGroup": {
             "value": "[variables('vmssSinglePlacementGroup')]"
+          },
+          "installRDMADriver": {
+            "value": "[variables('cnInstallRDMADriver')]"
           },
           "clusterName": {
             "value": "[parameters('clusterName')]"
