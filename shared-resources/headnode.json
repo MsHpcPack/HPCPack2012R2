@@ -33,6 +33,12 @@
         "description": "The network interface name"
       }
     },
+    "imageReference": {
+      "type": "object",
+      "metadata": {
+        "description": "The image reference"
+      }
+    },
     "adminUsername": {
       "type": "string",
       "metadata": {
@@ -113,12 +119,7 @@
           }
         },
         "storageProfile": {
-          "imageReference": {
-            "publisher": "MicrosoftWindowsServerHPCPack",
-            "offer": "WindowsServerHPCPack",
-            "sku": "2012R2",
-            "version": "latest"
-          },
+          "imageReference": "[parameters('imageReference')]",
           "osDisk": {
             "name": "[concat(parameters('vmName'), '-osdisk')]",
             "caching": "ReadOnly",

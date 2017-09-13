@@ -217,6 +217,12 @@
       "HDD": "Standard_LRS",
       "SSD": "Premium_LRS"
     },
+    "headnodeImageReference": {
+      "publisher": "MicrosoftWindowsServerHPCPack",
+      "offer": "WindowsServerHPCPack",
+      "sku": "2012R2",
+      "version": "latest"
+    },
     "computeNodeUsesCustomImage": "[contains(parameters('computeNodeImageRef'), 'id')]",
     "privateClusterFQDN": "[concat(parameters('clusterName'), '.', parameters('domainName'))]",
     "vmssSinglePlacementGroup": "[lessOrEquals(parameters('computeNodeNumber'), if(variables('computeNodeUsesCustomImage'), 40, 100))]",
@@ -395,6 +401,9 @@
           },
           "nicName": {
             "value": "[variables('nicNameHN')]"
+          },
+          "imageReference": {
+            "value": "[variables('headnodeImageReference')]"
           },
           "adminUsername": {
             "value": "[parameters('adminUsername')]"
