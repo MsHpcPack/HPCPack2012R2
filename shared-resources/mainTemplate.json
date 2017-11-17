@@ -241,6 +241,7 @@
     "availabilitySetNumber": "[add(div(parameters('computeNodeNumber'), variables('nbrVMPerAvailabilitySet')), 1)]",
     "nicNameSuffix": "[concat('-nic', uniqueString(variables('subnetRef')))]",
     "nicNameHN": "[concat(parameters('clusterName'), variables('nicNameSuffix'))]",
+    "nsgName": "[concat('hpcnsg-',uniquestring(resourceGroup().id, variables('subnetRef')))]",
     "rdmaVMSizes": [
       "Standard_A8",
       "Standard_A9",
