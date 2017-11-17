@@ -55,6 +55,12 @@
       "metadata": {
         "description": "The DNS name label of the public IP address"
       }
+    },
+    "networkSecurityGroupId": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource Id of the network security group applied to this network interface"
+      }
     }
   },
   "variables": {
@@ -97,6 +103,9 @@
             }
           }
         ]
+        "networkSecurityGroup": {
+          "id": "[parameters('networkSecurityGroupId')]"
+        }
       }
     }
   ],

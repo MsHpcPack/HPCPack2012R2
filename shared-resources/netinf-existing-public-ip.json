@@ -55,6 +55,12 @@
       "metadata": {
         "description": "The DNS name label of the public IP address, not used since this template use an existing public IP address"
       }
+    },
+    "networkSecurityGroupId": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource Id of the network security group applied to this network interface"
+      }
     }
   },
   "variables": {
@@ -81,7 +87,10 @@
               }
             }
           }
-        ]
+        ],
+        "networkSecurityGroup": {
+          "id": "[parameters('networkSecurityGroupId')]"
+        }
       }
     }
   ],
