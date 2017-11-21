@@ -102,7 +102,7 @@
               }
             }
           }
-        ]
+        ],
         "networkSecurityGroup": {
           "id": "[parameters('networkSecurityGroupId')]"
         }
