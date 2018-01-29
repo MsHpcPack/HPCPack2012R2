@@ -109,6 +109,17 @@
         "description": "Specify whether to use VM scale set to create compute nodes. 'Yes' for VM scale set, 'No' for VMs"
       }
     },
+    "enableAcceleratedNetworking": {
+      "type": "string",
+      "defaultValue": "No",
+      "allowedValues": [
+        "Yes",
+        "No"
+      ],
+      "metadata": {
+        "description": "Specify whether to create the Azure VMs with accelerated networking or not. More information about accelerated networking please see https://docs.microsoft.com/en-us/azure/virtual-network/create-vm-accelerated-networking-powershell."
+      }
+    },
     "domainUsername": {
       "type": "string",
       "metadata": {
@@ -179,7 +190,7 @@
   },
   "resources": [
     {
-      "apiVersion": "2015-01-01",
+      "apiVersion": "2016-09-01",
       "type": "Microsoft.Resources/deployments",
       "name": "mainTemplate",
       "properties": {
@@ -248,6 +259,9 @@
           },
           "adminPassword": {
             "value": "[parameters('domainUserPassword')]"
+          },
+          "enableAcceleratedNetworking": {
+            "value": "[if(equals(parameters('enableAcceleratedNetworking'), 'Yes'), bool('true'), bool('false'))]"
           },
           "headNodePostConfigScript": {
             "value": "[trim(parameters('headNodePostConfigScript'))]"

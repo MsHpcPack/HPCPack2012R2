@@ -2,12 +2,6 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "apiVersion": {
-      "type": "string",
-      "metadata": {
-        "description": "The API version"
-      }
-    },
     "nicName": {
       "type": "string",
       "metadata": {
@@ -83,7 +77,14 @@
       "metadata": {
         "description": "Not used for Linux nodes"
       }
-    },    
+    },
+    "enableAcceleratedNetworking": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Specify whether to create the Azure VM with accelerated networking"
+      }
+    },
     "clusterName": {
       "type": "string",
       "metadata": {
@@ -101,7 +102,7 @@
   },
   "resources": [
     {
-      "apiVersion": "[parameters('apiVersion')]",
+      "apiVersion": "2017-06-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[parameters('nicName')]",
       "location": "[resourceGroup().location]",
@@ -116,11 +117,12 @@
               }
             }
           }
-        ]
+        ],
+        "enableAcceleratedNetworking": "[parameters('enableAcceleratedNetworking')]"
       }
     },
     {
-      "apiVersion": "2016-04-30-preview",
+      "apiVersion": "2017-03-30",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[parameters('vmName')]",
       "location": "[resourceGroup().location]",
@@ -166,7 +168,7 @@
         {
           "type": "Microsoft.Compute/virtualMachines/extensions",
           "name": "[concat(parameters('vmName'), '/installHPCNodeAgent')]",
-          "apiVersion": "[parameters('apiVersion')]",
+          "apiVersion": "2017-03-30",
           "location": "[resourceGroup().location]",
           "dependsOn": [
             "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
