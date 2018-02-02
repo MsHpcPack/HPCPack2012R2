@@ -249,7 +249,7 @@
         "sku": "12-SP3",
         "version": "latest"
       },
-      "SLES_12_SP2_Premium": {
+      "SLES_12_SP3_Premium": {
         "publisher": "SUSE",
         "offer": "SLES-Priority",
         "sku": "12-SP3",
