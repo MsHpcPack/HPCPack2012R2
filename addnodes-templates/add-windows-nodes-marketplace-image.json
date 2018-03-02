@@ -142,7 +142,9 @@
       "Standard_A9",
       "Standard_H16r",
       "Standard_H16mr",
-      "Standard_NC24r"
+      "Standard_NC24r",
+      "Standard_NC24rs_v2",
+      "Standard_ND24rs"
     ],
     "cnInstallRDMADriver": "[contains(variables('rdmaVMSizes'), parameters('computeNodeVMSize'))]",
     "computeNodeCustomData": "[base64(concat('HPCClusterName=', parameters('clusterName'), '\r\nImageCategory=public\r\nImageName=', variables('computeNodeImageRef').offer, '-', variables('computeNodeImageRef').sku, '\r\nVMSize=', parameters('computeNodeVMSize')))]",
@@ -150,6 +152,7 @@
   },
   "resources": [
     {
+      "condition": "[variables('cnInstallRDMADriver')]",
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[concat(variables('availabilitySetNamePrefix'), padLeft(string(copyIndex()), 2, '0'))]",
       "apiVersion": "2017-03-30",
@@ -209,7 +212,7 @@
             "value": "[parameters('domainUserPassword')]"
           },
           "availabilitySetName": {
-            "value": "[concat(variables('availabilitySetNamePrefix'), padLeft(string(div(copyIndex(parameters('computeNodeNameStartIndex')), variables('nbrVMPerAvailabilitySet'))), 2, '0'))]"
+            "value": "[if(variables('cnInstallRDMADriver'), concat(variables('availabilitySetNamePrefix'), padLeft(string(div(copyIndex(parameters('computeNodeNameStartIndex')), variables('nbrVMPerAvailabilitySet'))), 2, '0')), '')]"
           },
           "customData": {
             "value": "[variables('computeNodeCustomData')]"

@@ -253,7 +253,9 @@
       "Standard_A9",
       "Standard_H16r",
       "Standard_H16mr",
-      "Standard_NC24r"
+      "Standard_NC24r",
+      "Standard_NC24rs_v2",
+      "Standard_ND24rs"
     ],
     "cnInstallRDMADriver": "[contains(variables('rdmaVMSizes'), parameters('computeNodeVMSize'))]",
     "hnInstallRDMADriver": "[contains(variables('rdmaVMSizes'), parameters('headNodeVMSize'))]",
@@ -460,7 +462,7 @@
       }
     },
     {
-      "condition": "[not(parameters('useVmssForComputeNodes'))]",
+      "condition": "[and(variables('cnInstallRDMADriver'), not(parameters('useVmssForComputeNodes')))]",
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[concat(variables('availabilitySetNamePrefix'), padLeft(string(copyIndex()), 2, '0'))]",
       "apiVersion": "2017-03-30",
@@ -638,7 +640,7 @@
             "value": "[parameters('adminPassword')]"
           },
           "availabilitySetName": {
-            "value": "[concat(variables('availabilitySetNamePrefix'), padLeft(string(div(add(copyIndex(), 1), variables('nbrVMPerAvailabilitySet'))), 2, '0'))]"
+            "value": "[if(variables('cnInstallRDMADriver'), concat(variables('availabilitySetNamePrefix'), padLeft(string(div(add(copyIndex(), 1), variables('nbrVMPerAvailabilitySet'))), 2, '0')), '')]"
           },
           "customData": {
             "value": "[variables('computeNodeCustomData')]"
