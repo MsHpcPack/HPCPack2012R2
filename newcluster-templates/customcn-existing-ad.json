@@ -128,7 +128,7 @@
         "No"
       ],
       "metadata": {
-        "description": "Specify whether to create the Azure VMs with accelerated networking or not. More information about accelerated networking please see https://docs.microsoft.com/en-us/azure/virtual-network/create-vm-accelerated-networking-powershell."
+        "description": "Specify whether to create the Azure VMs with accelerated networking or not. Note accelerated networking is supported only for some VM sizes and operating systems. More information about accelerated networking please see https://docs.microsoft.com/en-us/azure/virtual-network/create-vm-accelerated-networking-powershell."
       }
     },
     "domainUsername": {
