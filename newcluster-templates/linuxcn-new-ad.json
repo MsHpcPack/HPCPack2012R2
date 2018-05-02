@@ -304,7 +304,7 @@
   },
   "resources": [
     {
-      "apiVersion": "2016-09-01",
+      "apiVersion": "2017-05-10",
       "type": "Microsoft.Resources/deployments",
       "name": "mainTemplate",
       "properties": {

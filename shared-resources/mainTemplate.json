@@ -283,7 +283,7 @@
     {
       "name": "prepareSOAStorageAccountIfneeded",
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2016-09-01",
+      "apiVersion": "2017-05-10",
       "properties": {
         "mode": "Incremental",
         "templateLink": {
@@ -302,7 +302,7 @@
     },
     {
       "condition": "[equals(parameters('newOrExistingDomainForest'), 'new')]",
-      "apiVersion": "2017-06-01",
+      "apiVersion": "2017-10-01",
       "type": "Microsoft.Network/virtualNetworks",
       "name": "[parameters('virtualNetworkName')]",
       "location": "[resourceGroup().location]",
@@ -326,7 +326,7 @@
       "condition": "[not(equals(parameters('publicIPCreateOption'), 'no'))]",
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('nsgName')]",
-      "apiVersion": "2017-06-01",
+      "apiVersion": "2017-10-01",
       "location": "[resourceGroup().location]",
       "properties": {
         "securityRules": [
@@ -420,7 +420,7 @@
     {
       "name": "[concat('createNicFor', parameters('clusterName'))]",
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2016-09-01",
+      "apiVersion": "2017-05-10",
       "dependsOn": [
         "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgName'))]"
       ],
@@ -465,7 +465,7 @@
       "condition": "[and(variables('cnInstallRDMADriver'), not(parameters('useVmssForComputeNodes')))]",
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[concat(variables('availabilitySetNamePrefix'), padLeft(string(copyIndex()), 2, '0'))]",
-      "apiVersion": "2017-03-30",
+      "apiVersion": "2017-12-01",
       "location": "[resourceGroup().location]",
       "sku": {
         "name": "Aligned"
@@ -480,7 +480,7 @@
       }
     },
     {
-      "apiVersion": "2016-09-01",
+      "apiVersion": "2017-05-10",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('createHN', parameters('clusterName'))]",
       "dependsOn": [
@@ -535,7 +535,7 @@
     },
     {
       "condition": "[equals(parameters('newOrExistingDomainForest'), 'new')]",
-      "apiVersion": "2016-09-01",
+      "apiVersion": "2017-05-10",
       "type": "Microsoft.Resources/deployments",
       "name": "updateVNetDNS",
       "dependsOn": [
@@ -570,7 +570,7 @@
       }
     },
     {
-      "apiVersion": "2017-03-30",
+      "apiVersion": "2017-12-01",
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('clusterName'),'/configureHeadNode')]",
       "location": "[resourceGroup().location]",
@@ -597,7 +597,7 @@
     },
     {
       "condition": "[not(parameters('useVmssForComputeNodes'))]",
-      "apiVersion": "2016-09-01",
+      "apiVersion": "2017-05-10",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('create', parameters('computeNodeNamePrefix'), padLeft(string(copyIndex()), 3, '0'))]",
       "dependsOn": [
@@ -662,7 +662,7 @@
     },
     {
       "condition": "[parameters('useVmssForComputeNodes')]",
-      "apiVersion": "2016-09-01",
+      "apiVersion": "2017-05-10",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('create', parameters('computeNodeNamePrefix'))]",
       "dependsOn": [

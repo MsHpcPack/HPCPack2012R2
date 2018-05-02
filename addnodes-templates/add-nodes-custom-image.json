@@ -156,7 +156,7 @@
       "condition": "[variables('cnInstallRDMADriver')]",
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[concat(variables('availabilitySetNamePrefix'), padLeft(string(copyIndex()), 2, '0'))]",
-      "apiVersion": "2017-03-30",
+      "apiVersion": "2017-12-01",
       "location": "[resourceGroup().location]",
       "sku": {
         "name": "Aligned"
@@ -171,7 +171,7 @@
       }
     },
     {
-      "apiVersion": "2016-09-01",
+      "apiVersion": "2017-05-10",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('create', parameters('computeNodeNamePrefix'), padLeft(string(copyIndex(parameters('computeNodeNameStartIndex'))), 3, '0'))]",
       "dependsOn": [
