@@ -144,7 +144,7 @@
   "variables": {
     "virtualNetworkName": "[concat(parameters('clusterName'), 'VNet')]",
     "subnetName": "Subnet-1",
-    "artifactsBaseUrl": "https://raw.githubusercontent.com/MsHpcPack/HPCPack2012R2/master/shared-resources",
+    "artifactsBaseUrl": "https://raw.githubusercontent.com/MsHpcPack/HPCPack2012R2/master/shared-resources/",
     "computeNodeImageOsPlatform": "Windows",
     "computeNodeImages": {
       "ComputeNode": {
@@ -170,7 +170,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('artifactsBaseUrl'), '/mainTemplate.json')]",
+          "uri": "[uri(variables('artifactsBaseUrl'), 'mainTemplate.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -189,8 +189,8 @@
           "domainName": {
             "value": "[parameters('domainName')]"
           },
-          "createStorageAccountForSOA": {
-            "value": "[if(equals(parameters('createStorageAccountForSOA'), 'Yes'), bool('true'), bool('false'))]"
+          "soaStorageAccountCreateOption": {
+            "value": "[if(equals(parameters('createStorageAccountForSOA'), 'Yes'), 'new', 'none')]"
           },
           "headNodeDiskType": {
             "value": "[parameters('headNodeDiskType')]"
@@ -237,7 +237,7 @@
           "headNodePostConfigScript": {
             "value": "[trim(parameters('headNodePostConfigScript'))]"
           },
-          "artifactsBaseUrl": {
+          "_artifactsLocation": {
             "value": "[variables('artifactsBaseUrl')]"
           }
         }

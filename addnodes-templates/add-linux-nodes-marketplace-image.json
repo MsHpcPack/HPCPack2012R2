@@ -309,7 +309,7 @@
     ],
     "cnInstallRDMADriver": "[contains(variables('rdmaVMSizes'), parameters('computeNodeVMSize'))]",
     "computeNodeCustomData": "[base64(concat('HPCClusterName=', parameters('clusterName'), '\r\nImageCategory=public\r\nImageName=', variables('computeNodeImageRef').offer, '-', variables('computeNodeImageRef').sku, '\r\nVMSize=', parameters('computeNodeVMSize')))]",
-    "sharedResxBaseUrl": "https://raw.githubusercontent.com/MsHpcPack/HPCPack2012R2/master/shared-resources"
+    "sharedResxBaseUrl": "https://raw.githubusercontent.com/MsHpcPack/HPCPack2012R2/master/shared-resources/"
   },
   "resources": [
     {
@@ -344,7 +344,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(variables('sharedResxBaseUrl'), '/linuxnode.json')]",
+          "uri": "[uri(variables('sharedResxBaseUrl'), 'linuxnode.json')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {

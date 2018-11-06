@@ -2,6 +2,13 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for the resources."
+      }
+    },
     "clusterName": {
       "type": "string",
       "minLength": 3,
@@ -28,9 +35,16 @@
     },
     "virtualNetworkResourceGroupName": {
       "type": "string",
-      "defaultValue": "",
+      "defaultValue": "[resourceGroup().name]",
       "metadata": {
-        "description": "The resource group in which the virtual network locates, only used when 'newOrExistingDomainForest' is specified as 'existing'."
+        "description": "The resource group in which the virtual network locates, you shall specify this parameter only when 'newOrExistingDomainForest' is specified as 'existing'."
+      }
+    },
+    "virtualNetworkAddressPrefixes": {
+      "type": "array",
+      "defaultValue": [ "10.0.0.0/16" ],
+      "metadata": {
+        "description": "The address prefix of the virtual network, only used when 'newOrExistingDomainForest' is specified as 'new'."
       }
     },
     "subnetName": {
@@ -40,6 +54,20 @@
         "description": "The subnet to be created, all VMs of the HPC cluster will be created in this subnet."
       }
     },
+    "subnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/22",
+      "metadata": {
+        "description": "The address prefix of the subnet, only used when 'newOrExistingDomainForest' is specified as 'new'."
+      }
+    },
+    "subnetStartAddress": {
+      "type": "string",
+      "defaultValue": "10.0.0.4",
+      "metadata": {
+        "description": "The first avilable address of the subnet, only used when 'newOrExistingDomainForest' is specified as 'new'."
+      }
+    },
     "domainName": {
       "type": "string",
       "defaultValue": "hpc.local",
@@ -47,11 +75,16 @@
         "description": "The fully qualified domain name (FQDN) for the private domain forest which will be created by this template, for example 'hpc.local'."
       }
     },
-    "createStorageAccountForSOA": {
-      "type": "bool",
-      "defaultValue": true,
+    "soaStorageAccountCreateOption": {
+      "type": "string",
+      "defaultValue": "new",
+      "allowedValues": [
+        "none",
+        "new",
+        "existing"
+      ],
       "metadata": {
-        "description": "Indicates whether to create the storage account for SOA common data and SOA session monitoring features."
+        "description": "Indicates how to create the storage account for SOA common data and SOA session monitoring features."
       }
     },
     "soaStorageAccountName": {
@@ -59,6 +92,13 @@
       "defaultValue": "",
       "metadata": {
         "description": "The storage account to be created for SOA common data and SOA session monitoring features"
+      }
+    },
+    "soaStorageAccountResourceGroupName": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().name]",
+      "metadata": {
+        "description": "Resource group for the storage account, you shall specify this value only when 'soaStorageAccountCreateOption' is specified as 'existing'."
       }
     },
     "soaStorageAccountType": {
@@ -113,7 +153,7 @@
       "maxLength": 12,
       "defaultValue": "IaaSCN",
       "metadata": {
-        "description": "The name prefix of the compute nodes."
+        "description": "The name prefix of the compute nodes. It must be no more than 12 characters, begin with a letter, and contain only letters, numbers and hyphens. For example, if 'IaaSCN' is specified, the compute node names will be 'IaaSCN000', 'IaaSCN001', ...; Make sure the compute node names are unique in the domain forest."
       }
     },
     "computeNodeNumber": {
@@ -153,7 +193,7 @@
     "publicIPCreateOption": {
       "type": "string",
       "allowedValues": [
-        "no",
+        "none",
         "new",
         "existing"
       ],
@@ -161,7 +201,7 @@
         "description": "Indicates whether to create the public IP address"
       }
     },
-    "publicIPRGName": {
+    "publicIPResourceGroupName": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
@@ -208,18 +248,25 @@
         "description": "Optional URL of a public available PowerShell script you want to run on the head node after it is configured. The script will be run as the Local System account. You can also specify arguments for the script, for example 'http://www.contoso.com/myhnpostscript.ps1 -Arg1 arg1 -Arg2 arg2'."
       }
     },
-    "artifactsBaseUrl": {
+    "_artifactsLocation": {
       "type": "string",
       "metadata": {
-        "description": "Base URL for Marketplace",
-        "artifactsBaseUrl": ""
+        "description": "The base URI where artifacts (nested templates or scripts) required by this template are located."
+      }
+    },
+    "_artifactsLocationSasToken": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The sasToken required to access _artifactsLocation."
       }
     }
   },
   "variables": {
     "defaultSoaStorageAccountName": "[toLower(concat('hpc', uniqueString(resourceGroup().id, toLower(parameters('clusterName')))))]",
     "soaStorageAccountName": "[if(empty(parameters('soaStorageAccountName')), variables('defaultSoaStorageAccountName'), parameters('soaStorageAccountName'))]",
-    "soaStorageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', variables('soaStorageAccountName'))]",
+    "soaStorageAccountRGName": "[if(empty(parameters('soaStorageAccountResourceGroupName')), resourceGroup().name, parameters('soaStorageAccountResourceGroupName'))]",
+    "soaStorageAccountId": "[resourceId(variables('soaStorageAccountRGName'), 'Microsoft.Storage/storageAccounts', variables('soaStorageAccountName'))]",
     "soaStorageConnStrPrefix": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('soaStorageAccountName'), ';AccountKey=')]",
     "storageAccountTypes": {
       "HDD": "Standard_LRS",
@@ -234,16 +281,15 @@
     "computeNodeUsesCustomImage": "[contains(parameters('computeNodeImageRef'), 'id')]",
     "privateClusterFQDN": "[concat(parameters('clusterName'), '.', parameters('domainName'))]",
     "vmssSinglePlacementGroup": "[lessOrEquals(parameters('computeNodeNumber'), if(variables('computeNodeUsesCustomImage'), 40, 100))]",
-    "vnetRGName": "[if(equals(parameters('newOrExistingDomainForest'), 'new'), resourceGroup().name, parameters('virtualNetworkResourceGroupName'))]",
-    "addressPrefix": "10.0.0.0/16",
-    "subnetAddressPrefix": "10.0.0.0/22",
+    "vnetRGName": "[if(empty(parameters('virtualNetworkResourceGroupName')), resourceGroup().name, parameters('virtualNetworkResourceGroupName'))]",
+    "subnetAddressPrefix": "[if(empty(parameters('subnetAddressPrefix')), '10.0.0.0/22', parameters('subnetAddressPrefix'))]",
+
     "hnPrivateIPAllocationMethod": "[if(equals(parameters('newOrExistingDomainForest'), 'new'), 'Static', 'Dynamic')]",
-    "headNodePrivateIP": "[if(equals(parameters('newOrExistingDomainForest'), 'new'), '10.0.0.4', '')]",
+    "headNodePrivateIP": "[if(empty(parameters('subnetStartAddress')), '10.0.0.4', parameters('subnetStartAddress'))]",
     "vnetID": "[resourceId(variables('vnetRGName'), 'Microsoft.Network/virtualNetworks',parameters('virtualNetworkName'))]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/', parameters('subnetName'))]",
-    "publicIPAddressRgName": "[if(equals(parameters('publicIPCreateOption'), 'existing'), parameters('publicIPRGName'), resourceGroup().name)]",
-    "defaultPublicIPName": "[concat(parameters('clusterName'), '-PublicIP-HN')]",
-    "publicIPAddressName": "[if(empty(parameters('publicIPName')), variables('defaultPublicIPName'), parameters('publicIPName'))]",
+    "publicIPAddressRgName": "[if(empty(parameters('publicIPResourceGroupName')), resourceGroup().name, parameters('publicIPResourceGroupName'))]",
+    "publicIPAddressName": "[if(empty(parameters('publicIPName')), concat(parameters('clusterName'), '-PublicIP-HN'), parameters('publicIPName'))]",
     "publicIPDNSNameLabel": "[if(empty(parameters('publicIPDNSNameLabel')), parameters('clusterName'), parameters('publicIPDNSNameLabel'))]",
     "publicIpAddressId": {
       "id": "[resourceId(variables('publicIPAddressRgName'), 'Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]"
@@ -271,30 +317,30 @@
     "hnAvailabilitySetName": "[if(and(and(variables('cnInstallRDMADriver'), variables('hnInstallRDMADriver')), not(parameters('useVmssForComputeNodes'))), concat(variables('availabilitySetNamePrefix'), '00'), '')]",
     "computeVmssName": "[take(replace(parameters('computeNodeNamePrefix'), '-', ''), 9)]",
     "computeNodeTemplateName": "[if(equals(parameters('computeNodeImageOsPlatform'), 'Linux'), 'linuxnode.json', 'windowsnode.json')]",
-    "computeNodeTemplateUrl": "[concat(parameters('artifactsBaseUrl'), '/', variables('computeNodeTemplateName'))]",
+    "computeNodeTemplateUrl": "[uri(parameters('_artifactsLocation'), concat(variables('computeNodeTemplateName'), parameters('_artifactsLocationSasToken')))]",
     "computeNodeVmssTemplateName": "[if(equals(parameters('computeNodeImageOsPlatform'), 'Linux'), 'linuxvmss.json', 'windowsvmss.json')]",
-    "computeNodeVmssTemplateUrl": "[concat(parameters('artifactsBaseUrl'), '/', variables('computeNodeVmssTemplateName'))]",
-    "fakeCusomImageReference": {
+    "computeNodeVmssTemplateUrl": "[uri(parameters('_artifactsLocation'), concat(variables('computeNodeVmssTemplateName'), parameters('_artifactsLocationSasToken')))]",
+    "userCustomImageReference": {
       "publisher": "user",
       "offer": "custom",
       "sku": "image",
       "version": "latest"
     },
-    "cusomDataImageRef": "[if(variables('computeNodeUsesCustomImage'), variables('fakeCusomImageReference'), parameters('computeNodeImageRef'))]",
+    "cusomDataImageRef": "[if(variables('computeNodeUsesCustomImage'), variables('userCustomImageReference'), parameters('computeNodeImageRef'))]",
     "customDataImageName": "[concat(variables('cusomDataImageRef').offer, '-', variables('cusomDataImageRef').sku)]",
     "customDataImageCategory": "[if(variables('computeNodeUsesCustomImage'), 'user', 'public')]",
     "computeNodeCustomData": "[base64(concat('HPCClusterName=', parameters('clusterName'), '\r\nImageCategory=', variables('customDataImageCategory'), '\r\nImageName=', variables('customDataImageName'), '\r\nVMSize=', parameters('computeNodeVMSize')))]",
     "adminBase64Password": "[base64(parameters('adminPassword'))]",
-    "iaasInfoArg": "[concat('-SubscriptionId ', subscription().subscriptionId, ' -VNet ', parameters('virtualNetworkName'), ' -Subnet ', parameters('subnetName'), ' -Location \"', resourceGroup().location, '\" -ResourceGroup ', variables('vnetRGName'))]",
+    "iaasInfoArg": "[concat('-SubscriptionId ', subscription().subscriptionId, ' -VNet ', parameters('virtualNetworkName'), ' -Subnet ', parameters('subnetName'), ' -Location \"', parameters('location'), '\" -ResourceGroup ', variables('vnetRGName'))]",
     "headNodeCommandStr": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File PrepareHN.ps1 -DomainFQDN ', parameters('domainName'), ' -AdminUserName ', parameters('adminUsername'), ' -AdminBase64Password \"', variables('adminBase64Password'), '\" -CNSize ', parameters('computeNodeVMSize'), ' -PostConfigScript \"', base64(trim(parameters('headNodePostConfigScript'))), '\" ', variables('iaasInfoArg'))]"
   },
   "resources": [
     {
-      "condition": "[parameters('createStorageAccountForSOA')]",
+      "condition": "[equals(parameters('soaStorageAccountCreateOption'), 'new')]",
       "apiVersion": "2018-07-01",
       "type": "Microsoft.Storage/storageAccounts",
       "name": "[variables('soaStorageAccountName')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "sku": {
         "name": "[parameters('soaStorageAccountType')]"
       },
@@ -306,12 +352,10 @@
       "apiVersion": "2018-08-01",
       "type": "Microsoft.Network/virtualNetworks",
       "name": "[parameters('virtualNetworkName')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "properties": {
         "addressSpace": {
-          "addressPrefixes": [
-            "[variables('addressPrefix')]"
-          ]
+          "addressPrefixes": "[parameters('virtualNetworkAddressPrefixes')]"
         },
         "subnets": [
           {
@@ -324,11 +368,11 @@
       }
     },
     {
-      "condition": "[not(equals(parameters('publicIPCreateOption'), 'no'))]",
+      "condition": "[not(equals(parameters('publicIPCreateOption'), 'none'))]",
       "type": "Microsoft.Network/networkSecurityGroups",
       "name": "[variables('nsgName')]",
       "apiVersion": "2018-08-01",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "properties": {
         "securityRules": [
           {
@@ -423,7 +467,7 @@
       "apiVersion": "2018-08-01",
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[variables('publicIPAddressName')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "properties": {
         "publicIPAllocationMethod": "Dynamic",
         "dnsSettings": {
@@ -435,7 +479,7 @@
       "apiVersion": "2018-08-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[variables('nicNameHN')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "dependsOn": [
         "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]"
       ],
@@ -446,7 +490,7 @@
             "properties": {
               "privateIPAllocationMethod": "[variables('hnPrivateIPAllocationMethod')]",
               "privateIPAddress": "[variables('headNodePrivateIP')]",
-              "publicIPAddress": "[if(not(equals(parameters('publicIPCreateOption'), 'no')), variables('publicIpAddressId') , json('null'))]",
+              "publicIPAddress": "[if(not(equals(parameters('publicIPCreateOption'), 'none')), variables('publicIpAddressId') , json('null'))]",
               "subnet": {
                 "id": "[variables('subnetRef')]"
               }
@@ -454,7 +498,7 @@
           }
         ],
         "enableAcceleratedNetworking": "[parameters('enableAcceleratedNetworking')]",
-        "networkSecurityGroup": "[if(not(equals(parameters('publicIPCreateOption'), 'no')), variables('networkSecurityGroupId') , json('null'))]"
+        "networkSecurityGroup": "[if(not(equals(parameters('publicIPCreateOption'), 'none')), variables('networkSecurityGroupId') , json('null'))]"
       }
     },
     {
@@ -462,7 +506,7 @@
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[concat(variables('availabilitySetNamePrefix'), padLeft(string(copyIndex()), 2, '0'))]",
       "apiVersion": "2018-06-01",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "sku": {
         "name": "Aligned"
       },
@@ -486,10 +530,13 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[concat(parameters('artifactsBaseUrl'), '/headnode.json')]",
+          "uri": "[uri(parameters('_artifactsLocation'), concat('headnode.json', parameters('_artifactsLocationSasToken')))]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
           "vmName": {
             "value": "[parameters('clusterName')]"
           },
@@ -517,14 +564,17 @@
           "installRDMADriver": {
             "value": "[variables('hnInstallRDMADriver')]"
           },
-          "scriptBaseUri": {
-            "value": "[parameters('artifactsBaseUrl')]"
-          },
           "newOrExistingDomainForest": {
             "value": "[parameters('newOrExistingDomainForest')]"
           },
           "domainName": {
             "value": "[parameters('domainName')]"
+          },
+          "_artifactsLocation": {
+            "value": "[parameters('_artifactsLocation')]"
+          },
+          "_artifactsLocationSasToken": {
+            "value": "[parameters('_artifactsLocationSasToken')]"
           }
         }
       }
@@ -539,29 +589,36 @@
       ],
       "properties": {
         "mode": "Incremental",
-        "templateLink": {
-          "uri": "[concat(parameters('artifactsBaseUrl'),'/vnet-with-dns-server.json')]",
-          "contentVersion": "1.0.0.0"
-        },
-        "parameters": {
-          "virtualNetworkName": {
-            "value": "[parameters('virtualNetworkName')]"
-          },
-          "virtualNetworkAddressRange": {
-            "value": "[variables('addressPrefix')]"
-          },
-          "subnetName": {
-            "value": "[parameters('subnetName')]"
-          },
-          "subnetRange": {
-            "value": "[variables('subnetAddressPrefix')]"
-          },
-          "DNSServerAddress": {
-            "value": [
-              "[variables('headNodePrivateIP')]",
-              "8.8.8.8"
-            ]
-          }
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": [
+            {
+              "apiVersion": "2018-08-01",
+              "name": "[parameters('virtualNetworkName')]",
+              "type": "Microsoft.Network/virtualNetworks",
+              "location": "[parameters('location')]",
+              "properties": {
+                "addressSpace": {
+                  "addressPrefixes": "[parameters('virtualNetworkAddressPrefixes')]"
+                },
+                "dhcpOptions": {
+                  "dnsServers": [
+                    "[variables('headNodePrivateIP')]",
+                    "8.8.8.8"
+                  ]
+                },
+                "subnets": [
+                  {
+                    "name": "[parameters('subnetName')]",
+                    "properties": {
+                      "addressPrefix": "[parameters('subnetAddressPrefix')]"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
         }
       }
     },
@@ -569,7 +626,7 @@
       "apiVersion": "2018-06-01",
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('clusterName'),'/configureHeadNode')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "dependsOn": [
         "[concat('Microsoft.Storage/storageAccounts/', variables('soaStorageAccountName'))]",
         "[concat('Microsoft.Resources/deployments/createHN', parameters('clusterName'))]",
@@ -582,12 +639,12 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "fileUris": [
-            "[concat(parameters('artifactsBaseUrl'), '/PrepareHN.ps1')]",
-            "[concat(parameters('artifactsBaseUrl'), '/HPCHNPrepare.ps1')]"
+            "[uri(parameters('_artifactsLocation'), concat('PrepareHN.ps1', parameters('_artifactsLocationSasToken')))]",
+            "[uri(parameters('_artifactsLocation'), concat('HPCHNPrepare.ps1', parameters('_artifactsLocationSasToken')))]"
           ]
         },
         "protectedSettings": {
-          "commandToExecute": "[concat(variables('headNodeCommandStr'), ' -AzureStorageConnStr \"', if(parameters('createStorageAccountForSOA'), concat(variables('soaStorageConnStrPrefix'), listKeys(variables('soaStorageAccountId'), '2018-07-01').keys[0].value), ''), '\" -PublicDnsName ', if(equals(parameters('publicIPCreateOption'), 'no'), variables('privateClusterFQDN'), reference(variables('publicIpAddressId').id, '2018-08-01').dnsSettings.fqdn))]"
+          "commandToExecute": "[concat(variables('headNodeCommandStr'), ' -AzureStorageConnStr \"', if(not(equals(parameters('soaStorageAccountCreateOption'), 'none')), concat(variables('soaStorageConnStrPrefix'), listKeys(variables('soaStorageAccountId'), '2018-07-01').keys[0].value), ''), '\" -PublicDnsName ', if(equals(parameters('publicIPCreateOption'), 'none'), variables('privateClusterFQDN'), reference(variables('publicIpAddressId').id, '2018-08-01').dnsSettings.fqdn))]"
         }
       }
     },
@@ -611,6 +668,9 @@
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
           "nicName": {
             "value": "[concat(parameters('computeNodeNamePrefix'), padLeft(string(copyIndex()), 3, '0'), variables('nicNameSuffix'))]"
           },
@@ -671,6 +731,9 @@
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
           "subnetId": {
             "value": "[variables('subnetRef')]"
           },
@@ -720,7 +783,7 @@
   "outputs": {
     "clusterDNSName": {
       "type": "string",
-      "value": "[if(equals(parameters('publicIPCreateOption'), 'no'), variables('privateClusterFQDN'), reference(variables('publicIpAddressId').id, '2018-08-01').dnsSettings.fqdn)]"
+      "value": "[if(equals(parameters('publicIPCreateOption'), 'none'), variables('privateClusterFQDN'), reference(variables('publicIpAddressId').id, '2018-08-01').dnsSettings.fqdn)]"
     }
   }
 }

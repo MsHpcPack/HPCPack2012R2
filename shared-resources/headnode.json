@@ -2,6 +2,13 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for the resources."
+      }
+    },
     "vmName": {
       "type": "string",
       "metadata": {
@@ -66,12 +73,6 @@
         "description": "Specify whether to install RDMA driver"
       }
     },
-    "scriptBaseUri": {
-      "type": "string",
-      "metadata": {
-        "description": "The base URI of the script"
-      }
-    },
     "newOrExistingDomainForest": {
       "type": "string",
       "defaultValue": "",
@@ -84,6 +85,19 @@
       "type": "string",
       "metadata": {
         "description": "The fully qualified domain name (FQDN) for the domain forest in which the head node will join, for example 'hpc.local'."
+      }
+    },
+    "_artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "The base URI where artifacts (nested templates or scripts) required by this template are located."
+      }
+    },
+    "_artifactsLocationSasToken": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The sasToken required to access _artifactsLocation."
       }
     }
   },
@@ -98,7 +112,7 @@
       "apiVersion": "2018-06-01",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[parameters('vmName')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "properties": {
         "availabilitySet": "[if(empty(parameters('availabilitySetName')), json('null'), variables('availabilitySet'))]",
         "hardwareProfile": {
@@ -149,7 +163,7 @@
           "type": "Microsoft.Compute/virtualMachines/extensions",
           "name": "[concat(parameters('vmName'), '/installRDMADriver')]",
           "apiVersion": "2018-06-01",
-          "location": "[resourceGroup().location]",
+          "location": "[parameters('location')]",
           "dependsOn": [
             "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
           ],
@@ -164,7 +178,7 @@
           "type": "Microsoft.Compute/virtualMachines/extensions",
           "name": "[concat(parameters('vmName'),'/', variables('dscScriptName'))]",
           "apiVersion": "2018-06-01",
-          "location": "[resourceGroup().location]",
+          "location": "[parameters('location')]",
           "dependsOn": [
             "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]",
             "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'),'/extensions/installRDMADriver')]"
@@ -172,11 +186,11 @@
           "properties": {
             "publisher": "Microsoft.Powershell",
             "type": "DSC",
-            "typeHandlerVersion": "2.26",
+            "typeHandlerVersion": "2.76",
             "autoUpgradeMinorVersion": true,
             "settings": {
               "configuration": {
-                "url": "[concat(parameters('scriptBaseUri'),'/', variables('dscScriptName'), '.ps1.zip')]",
+                "url": "[uri(parameters('_artifactsLocation'), concat(variables('dscScriptName'), '.ps1.zip'))]",
                 "script": "[concat(variables('dscScriptName'),'.ps1')]",
                 "function": "[variables('dscScriptName')]"
               },
@@ -190,7 +204,8 @@
                   "UserName": "[parameters('adminUsername')]",
                   "Password": "[parameters('adminPassword')]"
                 }
-              }
+              },
+              "configurationUrlSasToken": "[parameters('_artifactsLocationSasToken')]"
             }
           }
         }
