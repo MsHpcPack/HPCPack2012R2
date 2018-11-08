@@ -43,13 +43,14 @@
     },
     "headNodeDiskType": {
       "type": "string",
-      "defaultValue": "SSD",
+      "defaultValue": "Premium_SSD",
       "allowedValues": [
-        "HDD",
-        "SSD"
+        "Standard_HDD",
+        "Standard_SSD",
+        "Premium_SSD"
       ],
       "metadata": {
-        "description": "The disk type of head node VM. Note that SSD only supports DS-series, DSv2-series, GS-series, and Fs-series VMs."
+        "description": "The disk type of head node VM. Note that Premium_SSD only supports DS-series, DSv2-series, GS-series, and Fs-series VMs."
       }
     },
     "computeNodeImage": {
@@ -112,13 +113,14 @@
     },
     "computeNodeDiskType": {
       "type": "string",
-      "defaultValue": "HDD",
+      "defaultValue": "Standard_HDD",
       "allowedValues": [
-        "HDD",
-        "SSD"
+        "Standard_HDD",
+        "Standard_SSD",
+        "Premium_SSD"
       ],
       "metadata": {
-        "description": "The disk type of the compute node VMs. Note that SSD only supports DS-series, DSv2-series, GS-series, and Fs-series VMs."
+        "description": "The disk type of compute node VM. Note that Premium_SSD only supports DS-series, DSv2-series, GS-series, and Fs-series VMs."
       }
     },
     "useVmssForComputeNodes": {
@@ -194,6 +196,11 @@
   },
   "variables": {
     "artifactsBaseUrl": "https://raw.githubusercontent.com/MsHpcPack/HPCPack2012R2/master/shared-resources/",
+    "diskTypes": {
+      "Standard_HDD": "Standard_LRS",
+      "Standard_SSD": "StandardSSD_LRS",
+      "Premium_SSD": "Premium_LRS"
+    },
     "computeNodeImageOsPlatform": "Linux",
     "computeNodeImages": {
       "CentOS_6.5": {
@@ -383,7 +390,7 @@
             "value": "[if(equals(parameters('createStorageAccountForSOA'), 'Yes'), 'new', 'none')]"
           },
           "headNodeDiskType": {
-            "value": "[parameters('headNodeDiskType')]"
+            "value": "[variables('diskTypes')[parameters('headNodeDiskType')]]"
           },
           "headNodeVMSize": {
             "value": "[parameters('headNodeVMSize')]"
@@ -404,7 +411,7 @@
             "value": "[parameters('computeNodeNumber')]"
           },
           "computeNodeDiskType": {
-            "value": "[parameters('computeNodeDiskType')]"
+            "value": "[variables('diskTypes')[parameters('computeNodeDiskType')]]"
           },
           "computeNodeVMSize": {
             "value": "[parameters('computeNodeVMSize')]"

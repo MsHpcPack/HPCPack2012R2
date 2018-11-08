@@ -46,13 +46,14 @@
     },
     "computeNodeDiskType": {
       "type": "string",
-      "defaultValue": "HDD",
+      "defaultValue": "Standard_HDD",
       "allowedValues": [
-        "HDD",
-        "SSD"
+        "Standard_HDD",
+        "Standard_SSD",
+        "Premium_SSD"
       ],
       "metadata": {
-        "description": "The disk type of the compute node VMs. Note that SSD only supports DS-series, DSv2-series, GS-series, and Fs-series VMs."
+        "description": "The disk type of compute node VM. Note that Premium_SSD only supports DS-series, DSv2-series, GS-series, and Fs-series VMs."
       }
     },
     "domainUsername": {
@@ -110,9 +111,10 @@
     }
   },
   "variables": {
-    "storageAccountTypes": {
-      "HDD": "Standard_LRS",
-      "SSD": "Premium_LRS"
+    "diskTypes": {
+      "Standard_HDD": "Standard_LRS",
+      "Standard_SSD": "StandardSSD_LRS",
+      "Premium_SSD": "Premium_LRS"
     },
     "computeNodeImages": {
       "ComputeNode": {
@@ -200,7 +202,7 @@
             "value": "[parameters('computeNodeVMSize')]"
           },
           "storageAccountType": {
-            "value": "[variables('storageAccountTypes')[parameters('computeNodeDiskType')]]"
+            "value": "[variables('diskTypes')[parameters('computeNodeDiskType')]]"
           },
           "imageReference": {
             "value": "[variables('computeNodeImageRef')]"
