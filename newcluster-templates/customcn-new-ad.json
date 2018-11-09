@@ -158,6 +158,7 @@
     "virtualNetworkName": "[concat(parameters('clusterName'), 'VNet')]",
     "subnetName": "Subnet-1",
     "artifactsBaseUrl": "https://raw.githubusercontent.com/MsHpcPack/HPCPack2012R2/master/shared-resources/",
+    "computeNodeImageId": "[resourceId(parameters('computeNodeCustomImageRGName'), 'Microsoft.Compute/images', parameters('computeNodeCustomImageName'))]",
     "diskTypes": {
       "Standard_HDD": "Standard_LRS",
       "Standard_SSD": "StandardSSD_LRS",
