@@ -35,7 +35,6 @@
     },
     "storageAccountType": {
       "type": "string",
-      "allowedValues": [ "Standard_LRS", "Premium_LRS" ],
       "metadata": {
         "description": "The storage account type for the disks of the VM"
       }
