@@ -7,14 +7,14 @@
       "minLength": 1,
       "maxLength": 12,
       "metadata": {
-        "description": "The name prefix of the compute nodes. It must be no more than 12 characters, begin with a letter, and contain only letters, numbers and hyphens. For example, computeNodeNamePrefix is specified as 'IaaSCN-', and computeNodeNameStartIndex is specified as 2, the compute node names will be 'IaaSCN-002', 'IaaSCN-003', ...; Make sure the compute node names are unique in the domain forest."
+        "description": "The name prefix of the compute nodes. It must be no more than 12(or 9 if you use VMSS) characters, begin with a letter, and contain only letters, numbers; The compute node name pattern is '<NamePrefix><index>', the width of index is 3 (or 6 for VMSS) characters, make sure the compute node names are unique in the domain forest."
       }
     },
     "computeNodeNameStartIndex": {
       "type": "int",
       "defaultValue": 0,
       "metadata": {
-        "description": "The start index of the compute node name series. For example, computeNodeNamePrefix is specified as 'IaaSCN-', and computeNodeNameStartIndex is specified as 2, the compute node names will be 'IaaSCN-002', 'IaaSCN-003', ..."
+        "description": "The start index of the compute node name series (not applicable for VMSS). For example, computeNodeNamePrefix is specified as 'IaaSCN', and computeNodeNameStartIndex is specified as 2, the compute node names will be 'IaaSCN002', 'IaaSCN003', ..."
       }
     },
     "computeNodeNumber": {
@@ -23,7 +23,7 @@
       "minValue": 1,
       "maxValue": 50,
       "metadata": {
-        "description": "The number of the compute nodes. All the compute nodes will be created in the storage account where the custom HPC Pack compute node image locates. It is recommended to create no more than 40 VMs in one storage account to avoid possible throttling."
+        "description": "The number of the compute nodes."
       }
     },
     "computeNodeImage": {
@@ -84,6 +84,17 @@
       "type": "string",
       "metadata": {
         "description": "The existing subnet in which all VMs of the HPC cluster will be created."
+      }
+    },
+    "useVmssForComputeNodes": {
+      "type": "string",
+      "defaultValue": "No",
+      "allowedValues": [
+        "Yes",
+        "No"
+      ],
+      "metadata": {
+        "description": "Specify whether to use VM scale set to create compute nodes. 'Yes' for VM scale set, 'No' for VMs. Note it is an experimental feature to create the compute nodes as VM scale set. Some HPC features(for example 'Azure auto grow shrink') will not work if you use this feature."
       }
     },
     "enableAcceleratedNetworking": {
@@ -149,12 +160,15 @@
       "Standard_ND24rs"
     ],
     "cnInstallRDMADriver": "[contains(variables('rdmaVMSizes'), parameters('computeNodeVMSize'))]",
+    "cnUseVMSS": "[equals(parameters('useVmssForComputeNodes'), 'Yes')]",
+    "computeVmssName": "[take(replace(parameters('computeNodeNamePrefix'), '-', ''), 9)]",
+    "vmssSinglePlacementGroup": "[lessOrEquals(parameters('computeNodeNumber'), 100)]",
     "computeNodeCustomData": "[base64(concat('HPCClusterName=', parameters('clusterName'), '\r\nImageCategory=public\r\nImageName=', variables('computeNodeImageRef').offer, '-', variables('computeNodeImageRef').sku, '\r\nVMSize=', parameters('computeNodeVMSize')))]",
     "sharedResxBaseUrl": "https://raw.githubusercontent.com/MsHpcPack/HPCPack2012R2/master/shared-resources/"
   },
   "resources": [
     {
-      "condition": "[variables('cnInstallRDMADriver')]",
+      "condition": "[and(variables('cnUseVMSS'), variables('cnInstallRDMADriver'))]",
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[concat(variables('availabilitySetNamePrefix'), padLeft(string(copyIndex()), 2, '0'))]",
       "apiVersion": "2018-06-01",
@@ -172,6 +186,7 @@
       }
     },
     {
+      "condition": "[not(variables('cnUseVMSS'))]",
       "apiVersion": "2018-05-01",
       "type": "Microsoft.Resources/deployments",
       "name": "[concat('create', parameters('computeNodeNamePrefix'), padLeft(string(copyIndex(parameters('computeNodeNameStartIndex'))), 3, '0'))]",
@@ -218,6 +233,63 @@
           },
           "customData": {
             "value": "[variables('computeNodeCustomData')]"
+          },
+          "installRDMADriver": {
+            "value": "[variables('cnInstallRDMADriver')]"
+          },
+          "enableAcceleratedNetworking": {
+            "value": "[if(equals(parameters('enableAcceleratedNetworking'), 'Yes'), bool('true'), bool('false'))]"
+          },
+          "clusterName": {
+            "value": "[parameters('clusterName')]"
+          },
+          "domainName": {
+            "value": "[parameters('domainName')]"
+          }
+        }
+      }
+    },
+    {
+      "condition": "[variables('cnUseVMSS')]",
+      "apiVersion": "2018-05-01",
+      "type": "Microsoft.Resources/deployments",
+      "name": "[concat('create', variables('computeVmssName'))]",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[uri(variables('sharedResxBaseUrl'), 'windowsvmss.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "subnetId": {
+            "value": "[variables('subnetRef')]"
+          },
+          "vmssName": {
+            "value": "[variables('computeVmssName')]"
+          },
+          "vmNumber": {
+            "value": "[parameters('computeNodeNumber')]"
+          },
+          "vmSize": {
+            "value": "[parameters('computeNodeVMSize')]"
+          },
+          "storageAccountType": {
+            "value": "[parameters('computeNodeDiskType')]"
+          },
+          "imageReference": {
+            "value": "[variables('computeNodeImageRef')]"
+          },
+          "adminUsername": {
+            "value": "[parameters('domainUsername')]"
+          },
+          "adminPassword": {
+            "value": "[parameters('domainUserPassword')]"
+          },
+          "customData": {
+            "value": "[variables('computeNodeCustomData')]"
+          },
+          "singlePlacementGroup": {
+            "value": "[variables('vmssSinglePlacementGroup')]"
           },
           "installRDMADriver": {
             "value": "[variables('cnInstallRDMADriver')]"

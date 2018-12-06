@@ -22,3 +22,7 @@ This template adds compute nodes with user customized image to an existing Micro
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMsHpcPack%2FHPCPack2012R2%2Fmaster%2Faddnodes-templates%2Fadd-nodes-custom-image.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
+
+## **Note:**
+
+It is an experimental feature to create the compute nodes as VM scale set. Some HPC features(for example 'Azure auto grow shrink') will not work if you use this feature.

@@ -191,6 +191,21 @@
           }
         }
       }
+    },
+    {
+      "condition": "[parameters('installRDMADriver')]",
+      "name": "[concat(parameters('vmssName'),'/installRDMADriver')]",
+      "type": "Microsoft.Compute/virtualMachineScaleSets/extensions",
+      "apiVersion": "2018-10-01",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachineScaleSets/', parameters('vmssName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.HpcCompute",
+        "type": "HpcVmDrivers",
+        "typeHandlerVersion": "1.1",
+        "autoUpgradeMinorVersion": true
+      }
     }
   ]
 }
