@@ -63,7 +63,7 @@
       "minLength": 1,
       "maxLength": 12,
       "metadata": {
-        "description": "The name prefix of the compute nodes. It must be no more than 12(or 9 if you use VMSS) characters, begin with a letter, and contain only letters, numbers; The compute node name pattern is '<NamePrefix><index>', the width of index is 3 (or 6 for VMSS) characters, make sure the compute node names are unique in the domain forest."
+        "description": "The name prefix of the compute nodes. It must be no more than 12(or 9 if you use VMSS) characters, begin with a letter, and contain only letters, numbers; The compute node name pattern is '&lt;NamePrefix&gt;&lt;index&gt;', the width of index is 3 (or 6 for VMSS) characters, make sure the compute node names are unique in the domain forest."
       }
     },
     "computeNodeNumber": {
