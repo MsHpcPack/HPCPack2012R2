@@ -1,6 +1,32 @@
-# Deploy Microsoft HPC Pack 2012 R2 cluster in Azure
+# **Important**
 
-You can now deploy a Microsoft HPC Pack cluster with HPC Pack 2012 R2 Update 3 in Azure. Choose one from the following templates and click "Deploy to Azure" button to deploy.
+**We have moved the project to Microsoft Azure official account in github (@Azure).**
+
+**This repository will not be updated anymore**.
+
+**Please visit our new home at https://www.github.com/Azure/hpcpack-template-2012r2**
+
+
+
+
+
+
+---
+
+## Contributing
+
+This project welcomes contributions and suggestions. Most contributions require you to
+agree to a Contributor License Agreement (CLA) declaring that you have the right to,
+and actually do, grant us the rights to use your contribution. For details, visit
+https://cla.microsoft.com.
+
+When you submit a pull request, a CLA-bot will automatically determine whether you need
+to provide a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the
+instructions provided by the bot. You will only need to do this once across all repositories using our CLA.
+
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
+For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/)
+or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
 
 ---
 ## The following templates create an HPC Pack cluster in an existing Active Directory Domain
